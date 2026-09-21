@@ -8,10 +8,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"reflect"
 	"runtime"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/amamiyakokoro/sysproxy-go/sysproxy"
@@ -176,174 +174,6 @@ var watchCmd = &cobra.Command{
 	},
 }
 
-var guardCmd = &cobra.Command{
-	Use:   "guard",
-	Short: "守护系统代理设置，检测到变更后自动恢复",
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-		defer stop()
-
-		opts, err := commandOptions()
-		if err != nil {
-			fmt.Println("解析命令参数失败：", err)
-			return
-		}
-		opts.Proxy = server
-		opts.Bypass = bypass
-		opts.PACURL = pacUrl
-		watchOpts := cloneOptions(opts)
-
-		var mode guardMode
-		if pacUrl != "" {
-			mode = guardModePAC
-		} else {
-			mode = guardModeProxy
-		}
-
-		if err := applyGuardSettings(ctx, mode, opts); err != nil {
-			if errors.Is(err, context.Canceled) {
-				return
-			}
-			fmt.Println("初始设置代理失败：", err)
-			return
-		}
-		expected, err := queryGuardSnapshot(mode, opts)
-		if err != nil {
-			fmt.Println("读取守护目标失败：", err)
-			return
-		}
-		fillGuardApplyOptions(mode, opts, expected)
-		fmt.Println("代理已设置，开始守护...")
-
-		for {
-			watchCtx, cancelWatch, watchReady, watchErr := startGuardWatch(ctx, watchOpts)
-			select {
-			case <-ctx.Done():
-				cancelWatch()
-				return
-			case <-watchReady:
-			}
-
-			current, err := queryGuardSnapshot(mode, opts)
-			if err != nil {
-				fmt.Println("检查代理设置失败：", err)
-				if !waitGuardNextChange(ctx, cancelWatch, watchErr) {
-					return
-				}
-				continue
-			}
-
-			if !reflect.DeepEqual(expected, current) {
-				fmt.Println("检测到代理设置变更，正在恢复...")
-				if err := applyGuardSettings(ctx, mode, opts); err != nil {
-					if errors.Is(err, context.Canceled) {
-						return
-					}
-					fmt.Println("恢复代理设置失败：", err)
-					if !waitGuardNextChange(ctx, nil, watchErr) {
-						return
-					}
-					continue
-				}
-				current, err = queryGuardSnapshot(mode, opts)
-				if err != nil {
-					fmt.Println("恢复后检查代理设置失败：", err)
-					if !waitGuardNextChange(ctx, nil, watchErr) {
-						return
-					}
-					continue
-				}
-				if !reflect.DeepEqual(expected, current) {
-					fmt.Printf("恢复后代理设置仍不匹配：expected=%+v current=%+v\n", expected, current)
-					if !waitGuardNextChange(ctx, nil, watchErr) {
-						return
-					}
-					continue
-				}
-				fmt.Println("代理设置已恢复")
-			}
-
-			select {
-			case <-ctx.Done():
-				cancelWatch()
-				return
-			case err := <-watchErr:
-				if err == nil {
-					continue
-				}
-				if errors.Is(err, context.Canceled) {
-					return
-				}
-				fmt.Println("监听代理设置失败：", err)
-				return
-			case <-watchCtx.Done():
-				if ctx.Err() != nil {
-					return
-				}
-			}
-		}
-	},
-}
-
-type guardMode string
-
-const (
-	guardModeProxy guardMode = "proxy"
-	guardModePAC   guardMode = "pac"
-)
-
-type guardSnapshot struct {
-	Mode             guardMode
-	ProxyEnable      bool
-	ProxySameForAll  bool
-	ProxyServers     map[string]string
-	ProxyBypass      string
-	ProxyPACConflict bool
-	PACEnable        bool
-	PACURL           string
-	PACProxyConflict bool
-}
-
-func startGuardWatch(ctx context.Context, opts *sysproxy.Options) (context.Context, context.CancelFunc, <-chan struct{}, <-chan error) {
-	watchCtx, cancel := context.WithCancel(ctx)
-	ready := make(chan struct{})
-	errCh := make(chan error, 1)
-	var readyOnce sync.Once
-
-	go func() {
-		err := sysproxy.WaitProxySettingsChangeReady(watchCtx, opts, func() {
-			readyOnce.Do(func() { close(ready) })
-		})
-		readyOnce.Do(func() { close(ready) })
-		errCh <- err
-	}()
-
-	return watchCtx, cancel, ready, errCh
-}
-
-func waitGuardNextChange(ctx context.Context, cancelWatch context.CancelFunc, watchErr <-chan error) bool {
-	if cancelWatch != nil {
-		defer cancelWatch()
-	}
-	select {
-	case <-ctx.Done():
-		return false
-	case <-watchErr:
-		return true
-	}
-}
-
-func applyGuardSettings(ctx context.Context, mode guardMode, opts *sysproxy.Options) error {
-	switch mode {
-	case guardModeProxy:
-		return setProxy(ctx, opts)
-	case guardModePAC:
-		return sysproxy.SetPac(opts)
-	default:
-		return fmt.Errorf("未知守护模式：%s", mode)
-	}
-}
-
 func setProxy(ctx context.Context, opts *sysproxy.Options) error {
 	if waitServer {
 		if err := waitProxyServerAvailable(ctx, opts.Proxy); err != nil {
@@ -411,59 +241,6 @@ func proxyTCPAddress(proxy string) (string, error) {
 		return proxy, nil
 	}
 	return "", fmt.Errorf("invalid proxy address: %s", proxy)
-}
-
-func queryGuardSnapshot(mode guardMode, opts *sysproxy.Options) (guardSnapshot, error) {
-	config, err := sysproxy.QueryProxySettings(guardQueryOptions(opts))
-	if err != nil {
-		return guardSnapshot{}, err
-	}
-	return newGuardSnapshot(mode, config), nil
-}
-
-func guardQueryOptions(opts *sysproxy.Options) *sysproxy.Options {
-	queryOpts := cloneOptions(opts)
-	if runtime.GOOS == "windows" && queryOpts.Device == "" {
-		queryOpts.UseRegistry = true
-	}
-	return queryOpts
-}
-
-func newGuardSnapshot(mode guardMode, config *sysproxy.ProxyConfig) guardSnapshot {
-	snapshot := guardSnapshot{Mode: mode}
-	if config == nil {
-		return snapshot
-	}
-
-	switch mode {
-	case guardModeProxy:
-		snapshot.ProxyEnable = config.Proxy.Enable
-		snapshot.ProxySameForAll = config.Proxy.SameForAll
-		snapshot.ProxyServers = copyStringMap(config.Proxy.Servers)
-		snapshot.ProxyBypass = config.Proxy.Bypass
-		snapshot.ProxyPACConflict = config.PAC.Enable
-	case guardModePAC:
-		snapshot.PACEnable = config.PAC.Enable
-		snapshot.PACURL = config.PAC.URL
-		snapshot.PACProxyConflict = config.Proxy.Enable
-	}
-
-	return snapshot
-}
-
-func fillGuardApplyOptions(mode guardMode, opts *sysproxy.Options, expected guardSnapshot) {
-	switch mode {
-	case guardModeProxy:
-		opts.Proxy = firstNonEmpty(
-			expected.ProxyServers["http_server"],
-			expected.ProxyServers["https_server"],
-			expected.ProxyServers["socks_server"],
-			opts.Proxy,
-		)
-		opts.Bypass = expected.ProxyBypass
-	case guardModePAC:
-		opts.PACURL = expected.PACURL
-	}
 }
 
 func commandOptions() (*sysproxy.Options, error) {
@@ -564,48 +341,12 @@ func mergeTargetOptions(dst, src *sysproxy.Options) {
 	}
 }
 
-func cloneOptions(opt *sysproxy.Options) *sysproxy.Options {
-	if opt == nil {
-		return &sysproxy.Options{}
-	}
-	copied := *opt
-	return &copied
-}
-
-func copyStringMap(src map[string]string) map[string]string {
-	if len(src) == 0 {
-		return nil
-	}
-
-	dst := make(map[string]string, len(src))
-	for key, value := range src {
-		if value == "" {
-			continue
-		}
-		dst[key] = value
-	}
-	if len(dst) == 0 {
-		return nil
-	}
-	return dst
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
 func init() {
 	rootCmd.AddCommand(proxyCmd)
 	rootCmd.AddCommand(pacCmd)
 	rootCmd.AddCommand(disableCmd)
 	rootCmd.AddCommand(statusCmd)
 	rootCmd.AddCommand(watchCmd)
-	rootCmd.AddCommand(guardCmd)
 
 	rootCmd.PersistentFlags().BoolVarP(&onlyActiveDevice, "only-active-device", "a", false, "仅对活跃的网络设备生效")
 	rootCmd.PersistentFlags().StringVarP(&device, "device", "d", "", "指定网络设备")
@@ -619,10 +360,6 @@ func init() {
 
 	pacCmd.Flags().StringVarP(&pacUrl, "url", "u", "", "pac 地址")
 
-	guardCmd.Flags().StringVarP(&server, "server", "s", "", "代理服务器地址")
-	guardCmd.Flags().StringVarP(&bypass, "bypass", "b", "", "绕过地址")
-	guardCmd.Flags().StringVarP(&pacUrl, "url", "u", "", "pac 地址")
-	guardCmd.Flags().BoolVar(&waitServer, "wait-server", false, "设置系统代理前一直等待代理服务器可用")
 }
 
 func registerTargetFlags() {
