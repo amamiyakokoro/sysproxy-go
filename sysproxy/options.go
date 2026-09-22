@@ -1,7 +1,5 @@
 package sysproxy
 
-import "runtime"
-
 type Options struct {
 	Proxy            string
 	Bypass           string
@@ -25,5 +23,5 @@ func resolveConcurrentApply(opt *Options) bool {
 }
 
 func DefaultConcurrent() bool {
-	return runtime.GOOS == "darwin"
+	return false
 }
