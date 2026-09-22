@@ -1,8 +1,14 @@
 # sysproxy-go
 
-A small Go library and command-line tool for reading, setting, disabling, and monitoring system proxy settings on Windows, macOS, and Linux.
+A Go library for reading, setting, disabling, and monitoring system proxy settings on Windows, macOS, and Linux. A legacy standalone command-line interface remains available during the transition to a library-only module.
 
-> **Fork status:** This is a maintained fork of [UruhaLushia/sysproxy-go](https://github.com/UruhaLushia/sysproxy-go), adapted for [KokoroBox-Desktop](https://github.com/amamiyakokoro/KokoroBox-Desktop). It may diverge from upstream, and its releases prioritize the platforms and architectures supported by KokoroBox-Desktop.
+> **Fork status:** This is the system-proxy mechanism library used by [KokoroBox Service](https://github.com/amamiyakokoro/kokorobox-service). KokoroBox Service owns authentication, leases, recovery, guard policy, and user-facing operations; this module only implements platform integration.
+
+## Standalone deprecation
+
+The `sysproxy` executable and its optional `sysproxy_server` HTTP server are deprecated. KokoroBox Desktop no longer invokes either interface; all system-proxy mutations go through the authenticated KokoroBox Service API.
+
+Existing standalone users can continue using the current commands during the compatibility period. New integrations should import the `sysproxy` package directly, or use KokoroBox Service when they need privilege management, leases, guard behavior, events, or a command-line interface. A future major release may remove the standalone executable and HTTP server after downstream consumers have migrated.
 
 ## Features
 
@@ -30,7 +36,7 @@ The module retains the upstream import path for compatibility:
 import "github.com/UruhaLushia/sysproxy-go/sysproxy"
 ```
 
-## CLI
+## Deprecated CLI
 
 ```sh
 # Set a proxy
@@ -49,7 +55,7 @@ sysproxy watch
 sysproxy guard --server 127.0.0.1:7890
 ```
 
-Run `sysproxy --help` or `sysproxy <command> --help` for the complete option reference.
+Run `sysproxy --help` or `sysproxy <command> --help` for the complete option reference. The command prints a deprecation notice directing KokoroBox users to KokoroBox Service.
 
 ## Go API
 
@@ -98,7 +104,7 @@ Release builds follow KokoroBox-Desktop's supported matrix:
 
 The x64 binaries require an x86-64-v3 processor. Other Go-supported targets may still build from source, but they are not published by this fork.
 
-## Optional HTTP service
+## Deprecated optional HTTP service
 
 The service is excluded from default builds. Enable it with the `sysproxy_server` build tag:
 
@@ -107,7 +113,7 @@ go build -tags sysproxy_server -o sysproxy .
 sysproxy server --network tcp --listen 127.0.0.1:9090
 ```
 
-It provides `/ping`, `/status`, `/proxy`, `/pac`, `/disable`, and the `/events` server-sent event stream.
+It provides `/ping`, `/status`, `/proxy`, `/pac`, `/disable`, and the `/events` server-sent event stream. This unauthenticated compatibility server is deprecated; new service integrations must use KokoroBox Service instead.
 
 ## License
 

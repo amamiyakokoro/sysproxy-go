@@ -1,3 +1,6 @@
+// Command sysproxy provides the legacy standalone system-proxy interface.
+//
+// Deprecated: KokoroBox integrations must use KokoroBox Service instead.
 package main
 
 import (

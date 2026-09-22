@@ -1,5 +1,8 @@
 //go:build sysproxy_server
 
+// Package server exposes the legacy standalone sysproxy HTTP interface.
+//
+// Deprecated: use the authenticated KokoroBox Service API for service integrations.
 package server
 
 import (
@@ -45,6 +48,9 @@ type Response struct {
 	Message string `json:"message"`
 }
 
+// Start runs the legacy standalone HTTP server.
+//
+// Deprecated: use the authenticated KokoroBox Service API instead.
 func Start(opt Options) error {
 	listener, err := Listen(opt)
 	if err != nil {

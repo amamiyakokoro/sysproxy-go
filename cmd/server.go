@@ -17,7 +17,7 @@ var (
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "启动监听服务",
+	Short: "启动监听服务（已弃用）",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := sysproxyserver.Start(sysproxyserver.Options{
 			Network: listenNetwork,

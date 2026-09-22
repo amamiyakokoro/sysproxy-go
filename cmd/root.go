@@ -41,11 +41,15 @@ const (
 	waitServerDialTimeout = 500 * time.Millisecond
 	waitServerInitialPoll = time.Second
 	waitServerMaxPoll     = 30 * time.Second
+	standaloneDeprecation = "DEPRECATED: the standalone sysproxy CLI is retained for compatibility only; KokoroBox integrations must use KokoroBox Service"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "sysproxy",
-	Short: "系统代理设置工具",
+	Short: "系统代理设置工具（已弃用；KokoroBox 请使用 KokoroBox Service）",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		fmt.Fprintln(cmd.ErrOrStderr(), standaloneDeprecation)
+	},
 }
 
 func Execute() error {
