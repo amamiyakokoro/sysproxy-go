@@ -1,4 +1,4 @@
-module github.com/UruhaLushia/sysproxy-go
+module github.com/amamiyakokoro/sysproxy-go
 
 go 1.25.0
 

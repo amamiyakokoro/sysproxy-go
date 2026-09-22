@@ -22,7 +22,7 @@ Existing standalone users can continue using the current commands during the com
 
 ## Install
 
-Download a prebuilt binary from [GitHub Releases](https://github.com/amamiyakokoro/sysproxy-go/releases), or build the fork from source:
+Download a prebuilt binary from [GitHub Releases](https://github.com/amamiyakokoro/sysproxy-go/releases), or build from source:
 
 ```sh
 git clone https://github.com/amamiyakokoro/sysproxy-go.git
@@ -30,10 +30,10 @@ cd sysproxy-go
 go build -trimpath -o sysproxy .
 ```
 
-The module retains the upstream import path for compatibility:
+Use the canonical module path:
 
 ```go
-import "github.com/UruhaLushia/sysproxy-go/sysproxy"
+import "github.com/amamiyakokoro/sysproxy-go/sysproxy"
 ```
 
 ## Deprecated CLI
@@ -62,7 +62,7 @@ Run `sysproxy --help` or `sysproxy <command> --help` for the complete option ref
 ```go
 package main
 
-import "github.com/UruhaLushia/sysproxy-go/sysproxy"
+import "github.com/amamiyakokoro/sysproxy-go/sysproxy"
 
 func main() {
 	if err := sysproxy.SetProxy(&sysproxy.Options{
@@ -102,7 +102,7 @@ Release builds follow KokoroBox-Desktop's supported matrix:
 | macOS | `amd64-v3`, `arm64` |
 | Linux | `amd64-v3`, `arm64` |
 
-The x64 binaries require an x86-64-v3 processor. Other Go-supported targets may still build from source, but they are not published by this fork.
+The x64 binaries require an x86-64-v3 processor. Other Go-supported targets may still build from source, but they are not published by this project.
 
 ## Deprecated optional HTTP service
 

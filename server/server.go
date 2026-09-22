@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/UruhaLushia/sysproxy-go/sysproxy"
+	"github.com/amamiyakokoro/sysproxy-go/sysproxy"
 )
 
 const (

@@ -5,7 +5,7 @@ package cmd
 import (
 	"fmt"
 
-	sysproxyserver "github.com/UruhaLushia/sysproxy-go/server"
+	sysproxyserver "github.com/amamiyakokoro/sysproxy-go/server"
 
 	"github.com/spf13/cobra"
 )

@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/UruhaLushia/sysproxy-go/sysproxy"
+	"github.com/amamiyakokoro/sysproxy-go/sysproxy"
 
 	"github.com/spf13/cobra"
 )

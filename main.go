@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/UruhaLushia/sysproxy-go/cmd"
+	"github.com/amamiyakokoro/sysproxy-go/cmd"
 )
 
 func main() {
