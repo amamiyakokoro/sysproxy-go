@@ -1,14 +1,32 @@
+<div align="center">
+
 # sysproxy-go
 
-Go library for reading, setting, disabling, and watching system proxy settings on Windows, macOS, and Linux. It provides the platform integration used by [KokoroBox Service](https://github.com/amamiyakokoro/kokorobox-service); authentication, leases, recovery, and guard policy belong to the service.
+Go library for reading, setting, disabling, and watching system proxy settings.
 
-## Install
+[License](LICENSE)
+
+</div>
+
+## Features
+
+- Set an HTTP, HTTPS, or SOCKS proxy, or a PAC URL
+- Query, disable, and watch proxy settings
+- Target another user or desktop session on Windows and Linux
+
+## Supported platforms
+
+| Platform | Backend |
+| --- | --- |
+| Windows | WinINet or user registry |
+| macOS | `networksetup` |
+| Linux | GNOME `gsettings` or KDE `kwriteconfig5`/`kwriteconfig6` |
+
+## Get started
 
 ```sh
 go get github.com/amamiyakokoro/sysproxy-go/v2@v2.0.0
 ```
-
-## Usage
 
 ```go
 package main
@@ -25,18 +43,19 @@ func main() {
 }
 ```
 
-The package also provides `SetPac`, `DisableProxy`, `QueryProxySettings`, and `WaitProxySettingsChange`. Pass `*sysproxy.Options` to each operation; `WaitProxySettingsChange` also takes a context. On Windows and Linux, `OptionsForUser` and `OptionsForProcess` can target another user or session.
+## Development
 
-## Platforms
+Requires Go 1.25+.
 
-| Platform | Backend |
-| --- | --- |
-| Windows | WinINet or user registry |
-| macOS | `networksetup` |
-| Linux | GNOME `gsettings` or KDE `kwriteconfig5`/`kwriteconfig6` |
+```sh
+go test ./...
+```
 
-Version 2 is a library only; it does not include a CLI or HTTP server.
+## Documentation
+
+- [Go package reference](https://pkg.go.dev/github.com/amamiyakokoro/sysproxy-go/v2/sysproxy)
+- [KokoroBox Service](https://github.com/amamiyakokoro/kokorobox-service) uses this library for platform integration and provides authentication, leases, recovery, and guard policy.
 
 ## License
 
-[GPL-3.0](LICENSE)
+Licensed under [GNU GPLv3](LICENSE).
