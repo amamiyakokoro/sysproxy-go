@@ -25,7 +25,7 @@ Go library for reading, setting, disabling, and watching system proxy settings.
 ## Get started
 
 ```sh
-go get github.com/amamiyakokoro/sysproxy-go/v2@v2.0.1
+go get github.com/amamiyakokoro/sysproxy-go/v2@v2.0.2
 ```
 
 ```go
