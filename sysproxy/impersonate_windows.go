@@ -20,19 +20,19 @@ var (
 
 func RunAsNamedPipeClient(pipe windows.Handle, fn func() error) (err error) {
 	if pipe == 0 {
-		return fmt.Errorf("命名管道句柄无效")
+		return fmt.Errorf("invalid named pipe handle")
 	}
 
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
 	if ret, _, callErr := procImpersonateNamedPipeClient.Call(uintptr(pipe)); ret == 0 {
-		return fmt.Errorf("模拟命名管道客户端失败：%v", callErr)
+		return fmt.Errorf("failed to impersonate named pipe client: %v", callErr)
 	}
 
 	defer func() {
 		if revertErr := windows.RevertToSelf(); err == nil && revertErr != nil {
-			err = fmt.Errorf("恢复线程身份失败：%w", revertErr)
+			err = fmt.Errorf("failed to restore thread identity: %w", revertErr)
 		}
 	}()
 
@@ -50,7 +50,7 @@ func OptionsForUser(name string) (*Options, error) {
 func OptionsForProcess(pid int) (*Options, error) {
 	sid, err := processUserSID(pid)
 	if err != nil {
-		return nil, fmt.Errorf("解析进程用户 SID 失败：%w", err)
+		return nil, fmt.Errorf("failed to resolve process user SID: %w", err)
 	}
 	return &Options{UserSID: sid}, nil
 }
@@ -85,7 +85,7 @@ func resolveOptionsUserSID(opt *Options) (string, error) {
 
 func lookupAccountSID(name string) (string, error) {
 	if name == "" {
-		return "", fmt.Errorf("用户不能为空")
+		return "", fmt.Errorf("user must not be empty")
 	}
 
 	namePtr, err := windows.UTF16PtrFromString(name)
@@ -99,7 +99,7 @@ func lookupAccountSID(name string) (string, error) {
 	err = windows.LookupAccountName(nil, namePtr, nil, &sidLen, nil, &domainLen, &use)
 	if err != windows.ERROR_INSUFFICIENT_BUFFER {
 		if err == nil {
-			return "", fmt.Errorf("解析用户 SID 失败：返回空 SID")
+			return "", fmt.Errorf("failed to resolve user SID: returned an empty SID")
 		}
 		return "", err
 	}
@@ -136,7 +136,7 @@ func processUserSID(pid int) (string, error) {
 		return "", err
 	}
 	if user == nil || user.User.Sid == nil {
-		return "", fmt.Errorf("进程令牌没有用户 SID")
+		return "", fmt.Errorf("process token has no user SID")
 	}
 	return user.User.Sid.String(), nil
 }

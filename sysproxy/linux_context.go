@@ -40,7 +40,7 @@ func newLinuxExecContext(opt *Options) (*linuxExecContext, error) {
 	} else if opt != nil && opt.PeerPID > 0 {
 		peerEnv, err := readProcessEnv(opt.PeerPID)
 		if err != nil {
-			return nil, fmt.Errorf("读取连接进程环境失败：%w", err)
+			return nil, fmt.Errorf("failed to read connected process environment: %w", err)
 		}
 
 		envMap = mergeEnvMaps(sessionBaseEnv(), peerEnv)

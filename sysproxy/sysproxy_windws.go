@@ -81,7 +81,7 @@ func refreshAndApplySettings(options []InternetPerConnOption, opt *Options) erro
 			INTERNET_OPTION_PER_CONNECTION_OPTION,
 			uintptr(unsafe.Pointer(&list)),
 			unsafe.Sizeof(list)); ret == 0 {
-			return fmt.Errorf("设置 %s 连接失败：%v", name, err)
+			return fmt.Errorf("failed to configure connection %s: %v", name, err)
 		}
 		return nil
 	}
@@ -162,7 +162,7 @@ func getTargetConnections(opt *Options) ([]string, error) {
 
 	connectionNames, err := enumAllConnectionNames()
 	if err != nil {
-		return nil, fmt.Errorf("获取连接名失败：%v", err)
+		return nil, fmt.Errorf("failed to get connection names: %v", err)
 	}
 
 	connectionNames = append(connectionNames, "")
@@ -271,7 +271,7 @@ func QueryProxySettings(opt *Options) (*ProxyConfig, error) {
 		INTERNET_OPTION_PER_CONNECTION_OPTION,
 		uintptr(unsafe.Pointer(&list)),
 		uintptr(unsafe.Pointer(&list.dwSize))); ret == 0 {
-		return nil, fmt.Errorf("查询失败：%v", err)
+		return nil, fmt.Errorf("failed to query proxy settings: %v", err)
 	}
 
 	flags := uint32(options[0].dwValue)
@@ -294,7 +294,7 @@ func useRegistrySettings(opt *Options) bool {
 
 func validateRegistryTarget(opt *Options) error {
 	if opt != nil && opt.Device != "" {
-		return fmt.Errorf("注册表模式不支持指定网络设备")
+		return fmt.Errorf("registry mode does not support targeting a specific network device")
 	}
 	return nil
 }

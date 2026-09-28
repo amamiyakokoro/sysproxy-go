@@ -24,13 +24,13 @@ func WaitProxySettingsChangeReady(ctx context.Context, _ *Options, ready func())
 
 	fd, err := unix.Open(systemConfigurationPreferencesPath, unix.O_EVTONLY, 0)
 	if err != nil {
-		return fmt.Errorf("打开 macOS 系统代理配置监听文件失败：%w", err)
+		return fmt.Errorf("failed to open macOS system proxy configuration file for watching: %w", err)
 	}
 	defer unix.Close(fd)
 
 	kq, err := unix.Kqueue()
 	if err != nil {
-		return fmt.Errorf("初始化 macOS 系统代理配置监听失败：%w", err)
+		return fmt.Errorf("failed to initialize macOS system proxy configuration watcher: %w", err)
 	}
 	defer unix.Close(kq)
 
@@ -40,7 +40,7 @@ func WaitProxySettingsChangeReady(ctx context.Context, _ *Options, ready func())
 		unix.NOTE_RENAME | unix.NOTE_DELETE | unix.NOTE_REVOKE
 
 	if _, err := unix.Kevent(kq, changes, nil, nil); err != nil {
-		return fmt.Errorf("注册 macOS 系统代理配置监听失败：%w", err)
+		return fmt.Errorf("failed to register macOS system proxy configuration watcher: %w", err)
 	}
 
 	if ready != nil {
@@ -59,14 +59,14 @@ func WaitProxySettingsChangeReady(ctx context.Context, _ *Options, ready func())
 			if errors.Is(err, unix.EINTR) {
 				continue
 			}
-			return fmt.Errorf("等待 macOS 系统代理配置变更失败：%w", err)
+			return fmt.Errorf("failed to wait for macOS system proxy configuration change: %w", err)
 		}
 		if n > 0 {
 			return nil
 		}
 
 		if _, err := os.Stat(systemConfigurationPreferencesPath); err != nil {
-			return fmt.Errorf("读取 macOS 系统代理配置文件失败：%w", err)
+			return fmt.Errorf("failed to read macOS system proxy configuration file: %w", err)
 		}
 	}
 }

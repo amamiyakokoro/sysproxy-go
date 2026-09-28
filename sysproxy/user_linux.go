@@ -14,7 +14,7 @@ import (
 func OptionsForUser(name string) (*Options, error) {
 	usr, err := user.Lookup(name)
 	if err != nil {
-		return nil, fmt.Errorf("查找用户失败：%w", err)
+		return nil, fmt.Errorf("failed to look up user: %w", err)
 	}
 
 	uid, err := parseLinuxUserID(usr.Uid, "uid")
@@ -41,16 +41,16 @@ func OptionsForUser(name string) (*Options, error) {
 
 func OptionsForProcess(pid int) (*Options, error) {
 	if pid <= 0 {
-		return nil, fmt.Errorf("PID 无效：%d", pid)
+		return nil, fmt.Errorf("invalid PID: %d", pid)
 	}
 
 	envMap, err := readProcessEnv(pid)
 	if err != nil {
-		return nil, fmt.Errorf("读取进程环境失败：%w", err)
+		return nil, fmt.Errorf("failed to read process environment: %w", err)
 	}
 	uid, gid, err := readProcessOwner(pid)
 	if err != nil {
-		return nil, fmt.Errorf("读取进程 owner 失败：%w", err)
+		return nil, fmt.Errorf("failed to read process owner: %w", err)
 	}
 
 	envMap = mergeEnvMaps(sessionBaseEnv(), envMap)
@@ -65,7 +65,7 @@ func OptionsForProcess(pid int) (*Options, error) {
 func parseLinuxUserID(value, name string) (uint32, error) {
 	id, err := strconv.ParseUint(value, 10, 32)
 	if err != nil {
-		return 0, fmt.Errorf("解析用户 %s 失败：%w", name, err)
+		return 0, fmt.Errorf("failed to resolve user %s: %w", name, err)
 	}
 	return uint32(id), nil
 }
@@ -154,7 +154,7 @@ func readProcessOwner(pid int) (uint32, uint32, error) {
 	}
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
-		return 0, 0, fmt.Errorf("无法读取进程 owner")
+		return 0, 0, fmt.Errorf("failed to read process owner")
 	}
 	return stat.Uid, stat.Gid, nil
 }

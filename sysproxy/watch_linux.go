@@ -37,7 +37,7 @@ func WaitProxySettingsChangeReady(ctx context.Context, opt *Options, ready func(
 	case e.isKde:
 		return waitKDEProxySettingsChange(ctx, e, ready)
 	default:
-		return fmt.Errorf("不支持的桌面：%s", e.desktop)
+		return fmt.Errorf("unsupported desktop environment: %s", e.desktop)
 	}
 }
 
@@ -93,7 +93,7 @@ func waitGnomeProxySettingsChange(ctx context.Context, e *Environment, ready fun
 				if firstErr != nil {
 					return firstErr
 				}
-				return fmt.Errorf("GNOME 代理设置监听已退出")
+				return fmt.Errorf("GNOME proxy settings watcher exited")
 			}
 			if firstErr == nil {
 				firstErr = err
@@ -106,14 +106,14 @@ func waitGsettingsSchemaChange(ctx context.Context, e *Environment, schema strin
 	cmd := execAsCurrentUserContext(ctx, e.ctx, "gsettings", "monitor", schema)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("监听 GNOME 代理设置失败：%s: %w", schema, err)
+		return fmt.Errorf("failed to watch GNOME proxy settings: %s: %w", schema, err)
 	}
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("启动 GNOME 代理设置监听失败：%s: %w", schema, err)
+		return fmt.Errorf("failed to start GNOME proxy settings watcher: %s: %w", schema, err)
 	}
 
 	scanner := bufio.NewScanner(stdout)
@@ -130,16 +130,16 @@ func waitGsettingsSchemaChange(ctx context.Context, e *Environment, schema strin
 		return nil
 	}
 	if scanErr != nil {
-		return fmt.Errorf("读取 GNOME 代理设置监听失败：%s: %w", schema, scanErr)
+		return fmt.Errorf("failed to read GNOME proxy settings watcher output: %s: %w", schema, scanErr)
 	}
 	if waitErr != nil {
 		message := strings.TrimSpace(stderr.String())
 		if message != "" {
-			return fmt.Errorf("GNOME 代理设置监听退出：%s: %w: %s", schema, waitErr, message)
+			return fmt.Errorf("GNOME proxy settings watcher exited: %s: %w: %s", schema, waitErr, message)
 		}
-		return fmt.Errorf("GNOME 代理设置监听退出：%s: %w", schema, waitErr)
+		return fmt.Errorf("GNOME proxy settings watcher exited: %s: %w", schema, waitErr)
 	}
-	return fmt.Errorf("GNOME 代理设置监听已退出：%s", schema)
+	return fmt.Errorf("GNOME proxy settings watcher exited: %s", schema)
 }
 
 func waitKDEProxySettingsChange(ctx context.Context, e *Environment, ready func()) error {
@@ -152,7 +152,7 @@ func waitKDEProxySettingsChange(ctx context.Context, e *Environment, ready func(
 	watchDir := false
 	if _, err := os.Stat(configPath); err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("读取 KDE 代理配置文件失败：%w", err)
+			return fmt.Errorf("failed to read KDE proxy configuration file: %w", err)
 		}
 		watchPath = filepath.Dir(configPath)
 		watchDir = true
@@ -160,13 +160,13 @@ func waitKDEProxySettingsChange(ctx context.Context, e *Environment, ready func(
 
 	fd, err := unix.InotifyInit1(unix.IN_CLOEXEC)
 	if err != nil {
-		return fmt.Errorf("初始化 KDE 代理设置监听失败：%w", err)
+		return fmt.Errorf("failed to initialize KDE proxy settings watcher: %w", err)
 	}
 	defer unix.Close(fd)
 
 	mask := uint32(unix.IN_CLOSE_WRITE | unix.IN_MODIFY | unix.IN_MOVED_TO | unix.IN_CREATE | unix.IN_ATTRIB | unix.IN_DELETE_SELF | unix.IN_MOVE_SELF)
 	if _, err := unix.InotifyAddWatch(fd, watchPath, mask); err != nil {
-		return fmt.Errorf("监听 KDE 代理配置文件失败：%s: %w", watchPath, err)
+		return fmt.Errorf("failed to watch KDE proxy configuration file: %s: %w", watchPath, err)
 	}
 
 	if ready != nil {
@@ -188,7 +188,7 @@ func waitKDEProxySettingsChange(ctx context.Context, e *Environment, ready func(
 			if errors.Is(err, unix.EINTR) {
 				continue
 			}
-			return fmt.Errorf("等待 KDE 代理配置文件变更失败：%w", err)
+			return fmt.Errorf("failed to wait for KDE proxy configuration file change: %w", err)
 		}
 		if n == 0 {
 			continue
@@ -199,7 +199,7 @@ func waitKDEProxySettingsChange(ctx context.Context, e *Environment, ready func(
 			if errors.Is(err, unix.EINTR) {
 				continue
 			}
-			return fmt.Errorf("读取 KDE 代理配置文件变更失败：%w", err)
+			return fmt.Errorf("failed to read KDE proxy configuration file changes: %w", err)
 		}
 		if readLen <= 0 {
 			continue
@@ -218,7 +218,7 @@ func kdeProxyConfigPath(e *Environment) (string, error) {
 			var err error
 			home, err = os.UserHomeDir()
 			if err != nil {
-				return "", fmt.Errorf("无法获取用户配置目录：%w", err)
+				return "", fmt.Errorf("failed to get user configuration directory: %w", err)
 			}
 		}
 		configHome = filepath.Join(home, ".config")

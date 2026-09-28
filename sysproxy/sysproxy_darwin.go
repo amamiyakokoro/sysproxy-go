@@ -189,17 +189,17 @@ func getNetworkServices(onlyActiveDevice bool) ([]string, error) {
 	if onlyActiveDevice {
 		ifaces, err = net.Interfaces()
 		if err != nil {
-			return nil, fmt.Errorf("无法获取网络接口：%w", err)
+			return nil, fmt.Errorf("failed to get network interfaces: %w", err)
 		}
 	}
 
 	cmd := exec.Command("networksetup", "-listnetworkserviceorder")
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("无法执行 networksetup 命令：%w", err)
+		return nil, fmt.Errorf("failed to execute networksetup command: %w", err)
 	}
 	if len(output) == 0 {
-		return nil, fmt.Errorf("networksetup 命令没有输出")
+		return nil, fmt.Errorf("networksetup command returned no output")
 	}
 
 	ordinalRegex := regexp.MustCompile(`^\(\d+\)\s*(.+)$`)
@@ -246,11 +246,11 @@ func getNetworkServices(onlyActiveDevice bool) ([]string, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("扫描输出时出错：%w", err)
+		return nil, fmt.Errorf("failed to scan output: %w", err)
 	}
 
 	if len(services) == 0 {
-		return nil, fmt.Errorf("未找到活跃的网络服务")
+		return nil, fmt.Errorf("no active network services found")
 	}
 
 	return services, nil
@@ -265,7 +265,7 @@ func execNetworksetupConcurrent(service string, commands [][]string) error {
 		go func(args []string) {
 			defer wg.Done()
 			if err := exec.Command("networksetup", args...).Run(); err != nil {
-				errChan <- fmt.Errorf("执行 networksetup %v 时出错，服务 %s: %w", args, service, err)
+				errChan <- fmt.Errorf("failed to execute networksetup %v for service %s: %w", args, service, err)
 			}
 		}(append([]string{cmd[0]}, append([]string{service}, cmd[1:]...)...))
 	}
@@ -288,7 +288,7 @@ func execNetworksetupSerial(service string, commands [][]string) error {
 	for _, cmd := range commands {
 		args := append([]string{cmd[0]}, append([]string{service}, cmd[1:]...)...)
 		if err := exec.Command("networksetup", args...).Run(); err != nil {
-			return fmt.Errorf("执行 networksetup %v 时出错，服务 %s: %w", args, service, err)
+			return fmt.Errorf("failed to execute networksetup %v for service %s: %w", args, service, err)
 		}
 	}
 	return nil

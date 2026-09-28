@@ -8,9 +8,9 @@ import (
 )
 
 func OptionsForUser(_ string) (*Options, error) {
-	return nil, fmt.Errorf("%s 不支持指定用户", runtime.GOOS)
+	return nil, fmt.Errorf("%s does not support targeting a specific user", runtime.GOOS)
 }
 
 func OptionsForProcess(_ int) (*Options, error) {
-	return nil, fmt.Errorf("%s 不支持指定进程", runtime.GOOS)
+	return nil, fmt.Errorf("%s does not support targeting a specific process", runtime.GOOS)
 }

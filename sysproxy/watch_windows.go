@@ -41,7 +41,7 @@ func WaitProxySettingsChangeReady(ctx context.Context, opt *Options, ready func(
 		event, err := windows.CreateEvent(nil, 0, 0, nil)
 		if err != nil {
 			closeHandles(handles)
-			return fmt.Errorf("创建代理设置变更事件失败：%w", err)
+			return fmt.Errorf("failed to create proxy settings change event: %w", err)
 		}
 		handles = append(handles, event)
 
@@ -54,7 +54,7 @@ func WaitProxySettingsChangeReady(ctx context.Context, opt *Options, ready func(
 	cancelEvent, err := windows.CreateEvent(nil, 0, 0, nil)
 	if err != nil {
 		closeHandles(handles)
-		return fmt.Errorf("创建代理设置守护取消事件失败：%w", err)
+		return fmt.Errorf("failed to create proxy settings guard cancellation event: %w", err)
 	}
 	handles = append(handles, cancelEvent)
 	defer closeHandles(handles)
@@ -75,7 +75,7 @@ func WaitProxySettingsChangeReady(ctx context.Context, opt *Options, ready func(
 
 	index, err := windows.WaitForMultipleObjects(handles, false, windows.INFINITE)
 	if err != nil {
-		return fmt.Errorf("等待代理设置变更失败：%w", err)
+		return fmt.Errorf("failed to wait for proxy settings change: %w", err)
 	}
 
 	if index == windows.WAIT_OBJECT_0+uint32(len(handles)-1) {
@@ -104,7 +104,7 @@ func openProxySettingsWatchKeys(opt *Options) ([]registry.Key, error) {
 			for _, opened := range keys {
 				opened.Close()
 			}
-			return nil, fmt.Errorf("打开代理设置监听注册表失败：%s: %w", path, err)
+			return nil, fmt.Errorf("failed to open registry key for proxy settings watcher: %s: %w", path, err)
 		}
 		keys = append(keys, key)
 	}
@@ -121,7 +121,7 @@ func notifyRegistryKeyChange(key registry.Key, event windows.Handle) error {
 
 	filter &^= windows.REG_NOTIFY_THREAD_AGNOSTIC
 	if retryErr := windows.RegNotifyChangeKeyValue(windows.Handle(key), false, filter, event, true); retryErr != nil {
-		return fmt.Errorf("监听代理设置注册表失败：%w", retryErr)
+		return fmt.Errorf("failed to watch proxy settings registry key: %w", retryErr)
 	}
 	return nil
 }

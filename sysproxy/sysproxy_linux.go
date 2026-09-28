@@ -61,7 +61,7 @@ func DisableProxy(opt *Options) error {
 	case e.isGnome:
 		return clearGnomeProxy(e)
 	default:
-		return fmt.Errorf("不支持的桌面：%s", e.desktop)
+		return fmt.Errorf("unsupported desktop environment: %s", e.desktop)
 	}
 }
 
@@ -106,7 +106,7 @@ func SetProxy(opt *Options) error {
 	case e.isGnome:
 		return setGnomeProxy(e, config)
 	default:
-		return fmt.Errorf("不支持的桌面：%s", e.desktop)
+		return fmt.Errorf("unsupported desktop environment: %s", e.desktop)
 	}
 }
 
@@ -138,7 +138,7 @@ func SetPac(opt *Options) error {
 	case e.isGnome:
 		return setGnomePac(e, config)
 	default:
-		return fmt.Errorf("不支持的桌面：%s", e.desktop)
+		return fmt.Errorf("unsupported desktop environment: %s", e.desktop)
 	}
 }
 
@@ -154,7 +154,7 @@ func QueryProxySettings(opt *Options) (*ProxyConfig, error) {
 	case e.isGnome:
 		return queryGnomeSettings(e)
 	default:
-		return nil, fmt.Errorf("不支持的桌面：%s", e.desktop)
+		return nil, fmt.Errorf("unsupported desktop environment: %s", e.desktop)
 	}
 }
 
@@ -180,7 +180,7 @@ func queryGnomeSettings(e *Environment) (*ProxyConfig, error) {
 	for _, key := range keys {
 		output, err := execAsCurrentUser(e.ctx, "gsettings", append([]string{"get"}, strings.Split(key.path, " ")...)...).Output()
 		if err != nil {
-			return nil, fmt.Errorf("无法读取 %s 的 GNOME 配置：%v", key.name, err)
+			return nil, fmt.Errorf("failed to read GNOME configuration for %s: %v", key.name, err)
 		}
 		settings[key.name] = string(output)
 	}
@@ -281,7 +281,7 @@ func queryKDESettings(e *Environment) (*ProxyConfig, error) {
 	for key := range keys {
 		output, err := execAsCurrentUser(e.ctx, cmd, "--file", "kioslaverc", "--group", group, "--key", key).Output()
 		if err != nil {
-			return nil, fmt.Errorf("无法读取 %s 的 KDE 配置：%v", key, err)
+			return nil, fmt.Errorf("failed to read KDE configuration for %s: %v", key, err)
 		}
 		keys[key] = cleanOutput(string(output))
 	}
